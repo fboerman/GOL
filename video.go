@@ -59,26 +59,40 @@ func clear(video *Video) {
 	video.renderer.Present()
 }
 
+// color palete
+var colors = [...][3]uint8{
+	{255, 77, 77},
+	{255, 26, 26},
+	{230, 0, 0},
+	{179, 0, 0},
+	{128, 0, 0},
+	{77, 0, 0},
+}
+
 // render given map to the screen
 func render_map(Map *GOLMap, video *Video) {
 	clear(video)
 
-	var rects []sdl.Rect
 	for y := 0; y < Map.heigth; y++ {
 		for x := 0; x < Map.width; x++ {
-			if *get_cell_read(x, y, Map) != 0 {
-				rects = append(rects, sdl.Rect{
-					X: int32(x * SCALE),
-					Y: int32(y * SCALE),
-					W: SCALE,
-					H: SCALE,
-				})
+			current_cell := *get_cell_read(x, y, Map)
+			if current_cell != 0 {
+				rect := sdl.Rect{
+					X: int32(x*SCALE) + 1,
+					Y: int32(y*SCALE) + 1,
+					W: SCALE - 1,
+					H: SCALE - 1,
+				}
+				var color [3]uint8
+				if int(current_cell) >= len(colors) {
+					color = colors[len(colors)-1]
+				} else {
+					color = colors[current_cell-1]
+				}
+				video.renderer.SetDrawColor(color[0], color[1], color[2], 255)
+				video.renderer.FillRect(&rect)
 			}
 		}
-	}
-	video.renderer.SetDrawColor(255, 255, 255, 255)
-	if len(rects) != 0 {
-		video.renderer.FillRects(rects)
 	}
 	video.renderer.Present()
 

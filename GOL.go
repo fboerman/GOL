@@ -9,13 +9,12 @@ import (
 )
 
 type GOLMap struct {
-	width int
-	heigth int
-	data1 []uint8
-	data2 []uint8
+	width          int
+	heigth         int
+	data1          []uint8
+	data2          []uint8
 	current_buffer int
 }
-
 
 // return pointer to cell in the map with given coordinates
 func get_cell_read(x int, y int, Map *GOLMap) *uint8 {
@@ -56,9 +55,11 @@ func get_current_buffer(Map *GOLMap) *[]uint8 {
 	return nil
 }
 
-func sum(V []uint8) (sum uint8){
+// this uses bit trick to prevent if statement if number is larger then zero
+// https://stackoverflow.com/questions/3912112/check-if-a-number-is-non-zero-using-bitwise-operators-in-c
+func sum(V []uint8) (sum uint8) {
 	for _, x := range V {
-		sum += x & 0x1
+		sum += (x | (uint8(^x) + 1)) >> 7
 	}
 	return
 }
@@ -73,14 +74,14 @@ func next(Map *GOLMap) {
 	// 3x3 block needed, a,b,c are the start indices per row in the block
 	it_a := 0
 	it_b := Map.width
-	it_c := 2*Map.width
+	it_c := 2 * Map.width
 
 	//current data buffer
 	data := *get_current_buffer(Map)
 
 	// y and x are the middle pixel of the block
-	for y:=1; y < Map.heigth-2; y++ {
-		for x:=1; x < Map.width-2; x++ {
+	for y := 1; y < Map.heigth-2; y++ {
+		for x := 1; x < Map.width-2; x++ {
 
 			// sum all alive cells in the block of 3x3
 			sum_block := sum(data[it_a:it_a+3]) + sum(data[it_b:it_b+3]) + sum(data[it_c:it_c+3])
@@ -91,12 +92,16 @@ func next(Map *GOLMap) {
 			// viewpoint: if the sum of all nine fields in a given neighbourhood is three, the inner field state for
 			// the next generation will be life; if the all-field sum is four, the inner field retains its current state;
 			// and every other sum sets the inner field to death.
-
+			current_cell := *get_cell_read(x, y, Map)
 			switch sum_block {
 			case 3:
-				*get_cell_write(x, y, Map) = 1
+				*get_cell_write(x, y, Map) += 1
 			case 4:
-				*get_cell_write(x, y, Map) = *get_cell_read(x, y, Map)
+				if current_cell > 0 {
+					*get_cell_write(x, y, Map) = current_cell + 1
+				} else {
+					*get_cell_write(x, y, Map) = 0
+				}
 			default:
 				*get_cell_write(x, y, Map) = 0
 			}
@@ -121,8 +126,7 @@ func next(Map *GOLMap) {
 	}
 }
 
-
-func main(){
+func main() {
 	map_fname := flag.String("map", "", "name of file to load map from")
 
 	flag.Parse()
